@@ -42,7 +42,7 @@ jobs:
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: release-artifacts
+          name: release-artifacts-${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}-${{ matrix.arch }}
           path: release/
 
   create_release:
@@ -53,7 +53,28 @@ jobs:
       - name: download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: release-artifacts
+          name: release-artifacts-linux-amd64
+
+      - name: download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-linux-arm64
+
+      - name: download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-windows-amd64
+
+      - name: download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-darwin-amd64
+
+      - name: download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-darwin-arm64
+
 
       - name: Create Release
         id: create_release
