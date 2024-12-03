@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [amd64, arm64]
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.22'  # Specify the Go version you want to use
+
+      - name: install dependencies
+        run: go mod tidy
+
+      - name: build
+        run: |
+          GOOS=${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}
+          GOARCH=${{ matrix.arch }}
+          go build -o fwd_mgmt_${{ matrix.os }}_${{ matrix.arch }} ./...
+
+      - name: package and create checksum
+        run: |
+          mkdir -p release
+          OUTPUT_NAME=fwd_mgmt_${{ matrix.os }}_${{ matrix.arch }}
+          tar -czf release/$OUTPUT_NAME.tar.gz $OUTPUT_NAME
+          echo "$(sha256sum release/$OUTPUT_NAME.tar.gz) $OUTPUT_NAME.tar.gz" >> release/checksums.txt
+
+      - name: create release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag: ${{ github.ref }}
+          files: |
+            release/fwd_mgmt_linux_amd64.tar.gz
+            release/fwd_mgmt_linux_arm64.tar.gz
+            release/fwd_mgmt_windows_amd64.tar.gz
+            release/fwd_mgmt_darwin_amd64.tar.gz
+            release/fwd_mgmt_darwin_arm64.tar.gz
+            release/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
