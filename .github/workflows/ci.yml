@@ -35,7 +35,7 @@ jobs:
       - name: package and create checksum
         run: |
           mkdir -p release
-          OUTPUT_NAME=fwd_mgmt_${{ matrix.os }}_${{ matrix.arch }}
+          OUTPUT_NAME=fwd_mgmt_${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}_${{ matrix.arch }}
           tar -czf release/$OUTPUT_NAME.tar.gz $OUTPUT_NAME
           echo "$(sha256sum release/$OUTPUT_NAME.tar.gz) $OUTPUT_NAME.tar.gz" >> release/checksums.txt
 
