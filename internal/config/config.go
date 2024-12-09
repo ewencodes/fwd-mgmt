@@ -16,12 +16,13 @@ type SSH struct {
 }
 
 type SSHTunnel struct {
-	RemoteHost string `mapstructure:"remote_host"`
-	RemotePort string `mapstructure:"remote_port"`
-	LocalPort  string `mapstructure:"local_port"`
-	LocalHost  string `mapstructure:"local_host"`
-	SSHHost    string `mapstructure:"ssh_host"`
-	SSHUser    string `mapstructure:"ssh_user"`
+	RemoteHost string   `mapstructure:"remote_host"`
+	RemotePort string   `mapstructure:"remote_port"`
+	LocalPort  string   `mapstructure:"local_port"`
+	LocalHost  string   `mapstructure:"local_host"`
+	SSHHost    string   `mapstructure:"ssh_host"`
+	SSHUser    string   `mapstructure:"ssh_user"`
+	Tags       []string `mapstructure:"tags"`
 }
 
 func NewConfig() (*Config, error) {
@@ -34,4 +35,35 @@ func NewConfig() (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func (s *SSH) GetTunnelsByTags(tags []string) []SSHTunnel {
+	var tunnels []SSHTunnel
+
+	for _, tunnel := range s.Tunnels {
+		if containsAll(tunnel.Tags, tags) {
+			tunnels = append(tunnels, tunnel)
+		}
+	}
+
+	return tunnels
+}
+
+func containsAll(s []string, t []string) bool {
+	for _, tag := range t {
+		if !contains(s, tag) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

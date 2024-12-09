@@ -8,8 +8,6 @@ import (
 
 	"github.com/ewencodes/fwd-mgmt/internal/hosts"
 	"github.com/spf13/cobra"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // updateHostsCmd represents the updateHosts command
@@ -22,14 +20,15 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		err := hosts.UpdateHosts()
 
 		if err != nil {
-			log.Fatalf("Failed to update hosts file: %s", err)
+			return fmt.Errorf("Failed to update hosts file: %s", err)
 		}
 
 		fmt.Println("Hosts file updated.")
+		return nil
 	},
 }
 
