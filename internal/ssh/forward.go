@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 
@@ -12,21 +13,26 @@ import (
 
 type Forward struct{}
 
-func StartForwardSession(sshHost string, sshUser string, localHost string, localPort string, remoteHost string, remotePort string, agentConn net.Conn) {
+func StartForwardSession(sshHost string, sshUser string, localHost string, localPort string, remoteHost string, remotePort string, agentConn net.Conn, wg *sync.WaitGroup) {
+	defer wg.Done()
 	config, err := getSSHConfig(sshUser, agentConn)
 	if err != nil {
-		log.Fatalf("Failed to get SSH config: %s", err)
+		log.Debugf("failed to get SSH config: %s", err)
+		return
 	}
 
 	conn, err := ssh.Dial("tcp", sshHost, config)
 	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
+		log.Debugf("failed to dial: %s (%s for %s:%s -> %s:%s)", err, sshHost, remoteHost, remotePort, localHost, localPort)
+		return
 	}
 	defer conn.Close()
 
 	localListener, err := net.Listen("tcp", localHost+":"+localPort)
 	if err != nil {
-		log.Fatalf("Failed to listen on local port: %s", err)
+		log.Debugf("failed to listen on local port: %s", err)
+		fmt.Printf("Failed to listen on %s:%s -> %s\n", localHost, localPort, err)
+		return
 	}
 	defer localListener.Close()
 

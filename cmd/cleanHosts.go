@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/ewencodes/fwd-mgmt/internal/hosts"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -21,14 +20,15 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		err := hosts.CleanHosts()
 
 		if err != nil {
-			log.Fatalf("Failed to clean hosts file: %s", err)
+			return err
 		}
 
 		fmt.Println("Hosts file cleaned successfully")
+		return nil
 	},
 }
 
