@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -33,7 +32,6 @@ var rootCmd = &cobra.Command{
 	Long:   ``,
 	PreRun: logs.ToggleDebug,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wg := new(sync.WaitGroup)
 		parsedConfig, err := config.NewConfig()
 
 		if err != nil {
@@ -70,10 +68,31 @@ var rootCmd = &cobra.Command{
 
 			agentsPids = append(agentsPids, agent.Pid)
 
-			go ssh.StartForwardSession(forward.SSHHost, forward.SSHUser, forward.LocalHost, forward.LocalPort, forward.RemoteHost, forward.RemotePort, agent.Conn, wg)
+			if parsedConfig.SSH.DefaultUser == "" && forward.SSHUser == "" {
+				return fmt.Errorf("no default user set in config or tunnel for %s", forward.RemoteHost)
+			}
+
+			sshUser := parsedConfig.SSH.DefaultUser
+
+			if forward.SSHUser != "" {
+				sshUser = forward.SSHUser
+			}
+
+			sshHost := parsedConfig.SSH.DefaultHost
+
+			if forward.SSHHost != "" {
+				sshHost = forward.SSHHost
+			}
+
+			sshPort := forward.SSHPort
+
+			if sshPort == "" {
+				sshPort = parsedConfig.SSH.DefaultPort
+			}
+
+			go ssh.StartForwardSession(fmt.Sprintf("%s:%s", sshHost, sshPort), sshUser, forward.LocalHost, forward.LocalPort, forward.RemoteHost, forward.RemotePort, agent.Conn)
 		}
 
-		wg.Wait()
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
