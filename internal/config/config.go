@@ -11,8 +11,11 @@ type Config struct {
 }
 
 type SSH struct {
-	Tunnels []SSHTunnel `mapstructure:"tunnels"`
-	Key     string      `mapstructure:"private_key"`
+	Tunnels     []SSHTunnel `mapstructure:"tunnels"`
+	Key         string      `mapstructure:"private_key"`
+	DefaultUser string      `mapstructure:"default_ssh_user"`
+	DefaultPort string      `mapstructure:"default_ssh_port"`
+	DefaultHost string      `mapstructure:"default_ssh_host"`
 }
 
 type SSHTunnel struct {
@@ -22,6 +25,7 @@ type SSHTunnel struct {
 	LocalHost  string   `mapstructure:"local_host"`
 	SSHHost    string   `mapstructure:"ssh_host"`
 	SSHUser    string   `mapstructure:"ssh_user"`
+	SSHPort    string   `mapstructure:"ssh_port"`
 	Tags       []string `mapstructure:"tags"`
 }
 
@@ -32,6 +36,10 @@ func NewConfig() (*Config, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %s", err)
+	}
+
+	if config.SSH.DefaultPort == "" {
+		config.SSH.DefaultPort = "22"
 	}
 
 	return &config, nil

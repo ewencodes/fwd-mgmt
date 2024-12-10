@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"sync"
 
 	log "github.com/sirupsen/logrus"
 
@@ -13,8 +12,7 @@ import (
 
 type Forward struct{}
 
-func StartForwardSession(sshHost string, sshUser string, localHost string, localPort string, remoteHost string, remotePort string, agentConn net.Conn, wg *sync.WaitGroup) {
-	defer wg.Done()
+func StartForwardSession(sshHost string, sshUser string, localHost string, localPort string, remoteHost string, remotePort string, agentConn net.Conn) {
 	config, err := getSSHConfig(sshUser, agentConn)
 	if err != nil {
 		log.Debugf("failed to get SSH config: %s", err)
