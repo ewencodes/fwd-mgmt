@@ -43,18 +43,20 @@ func StartForwardSession(sshHost string, sshUser string, localHost string, local
 			continue
 		}
 
-		go handleConnection(conn, localConn, remoteHost, remotePort)
+		remoteConn, err := conn.Dial("tcp", fmt.Sprintf("%s:%s", remoteHost, remotePort))
+		if err != nil {
+			log.Debugf("Failed to connect to remote host: %s", err)
+			continue
+		}
+
+		go handleConnection(localConn, remoteConn)
 	}
 }
 
-func handleConnection(sshConn *ssh.Client, localConn net.Conn, remoteHost, remotePort string) {
-	defer localConn.Close()
+func handleConnection(localConn net.Conn, remoteConn net.Conn) {
+	log.Debugf("Handling connection from %s to %s", localConn.RemoteAddr(), remoteConn.RemoteAddr())
 
-	remoteConn, err := sshConn.Dial("tcp", fmt.Sprintf("%s:%s", remoteHost, remotePort))
-	if err != nil {
-		log.Debugf("Failed to connect to remote host: %s", err)
-		return
-	}
+	defer localConn.Close()
 	defer remoteConn.Close()
 
 	go io.Copy(remoteConn, localConn)
