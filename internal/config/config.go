@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 
+	"slices"
+
 	"github.com/spf13/viper"
 )
 
@@ -57,21 +59,12 @@ func (s *SSH) GetTunnelsByTags(tags []string) []SSHTunnel {
 	return tunnels
 }
 
-func containsAll(s []string, t []string) bool {
-	for _, tag := range t {
-		if !contains(s, tag) {
+func containsAll(slice, tags []string) bool {
+	for _, tag := range tags {
+		if !slices.Contains(slice, tag) {
 			return false
 		}
 	}
 
 	return true
-}
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }
