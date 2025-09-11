@@ -1,0 +1,20 @@
+ssh:
+  private_key: /Users/rouloisewen/.ssh/id_rsa
+
+  default_ssh_user: eroulois
+  default_ssh_host: bastion.prod.tissotsmartwatch.com
+
+  hosts:
+    # -------
+    # RabbitMQ
+    # Ports from 49200 to 49400
+    # -------
+    # dev.se
+    - remote_host: 10.216.0.7
+      local_host: rmq-dev-se
+      ssh_host: bastion.hp.tissotsmartwatch.com
+      ssh_user: eroulois
+      tags: [rmq, dev]
+      tunnels:
+        - remote_port: 15672
+          local_port: 49200
