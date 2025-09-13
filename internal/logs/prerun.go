@@ -11,6 +11,6 @@ func ToggleDebug(cmd *cobra.Command, args []string) {
 	})
 	if debug, _ := cmd.Flags().GetBool("debug"); debug {
 		log.SetLevel(log.DebugLevel)
-		log.Debug("Debug logs enabled")
+		log.Debug("debug logs enabled")
 	}
 }

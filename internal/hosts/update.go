@@ -10,13 +10,13 @@ import (
 func UpdateHosts() error {
 	hosts, err := txeh.NewHostsDefault()
 	if err != nil {
-		return fmt.Errorf("Failed to read hosts file: %s", err)
+		return fmt.Errorf("failed to read hosts file: %s", err)
 	}
 
 	parsedConfig, err := config.NewConfig()
 
 	if err != nil {
-		return fmt.Errorf("Failed to parse config file: %s", err)
+		return fmt.Errorf("failed to parse config file: %s", err)
 	}
 
 	for _, forward := range parsedConfig.SSH.Tunnels {
@@ -25,7 +25,7 @@ func UpdateHosts() error {
 
 	err = hosts.Save()
 	if err != nil {
-		return fmt.Errorf("Failed to save hosts file: %s", err)
+		return fmt.Errorf("failed to save hosts file: %s", err)
 	}
 
 	return nil
@@ -34,13 +34,13 @@ func UpdateHosts() error {
 func CleanHosts() error {
 	hosts, err := txeh.NewHostsDefault()
 	if err != nil {
-		return fmt.Errorf("Failed to read hosts file: %s", err)
+		return fmt.Errorf("failed to read hosts file: %s", err)
 	}
 
 	parsedConfig, err := config.NewConfig()
 
 	if err != nil {
-		return fmt.Errorf("Failed to parse config file: %s", err)
+		return fmt.Errorf("failed to parse config file: %s", err)
 	}
 
 	for _, forward := range parsedConfig.SSH.Tunnels {
@@ -50,7 +50,7 @@ func CleanHosts() error {
 	err = hosts.Save()
 
 	if err != nil {
-		return fmt.Errorf("Failed to save hosts file: %s", err)
+		return fmt.Errorf("failed to save hosts file: %s", err)
 	}
 
 	return nil

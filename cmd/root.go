@@ -4,8 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/ewencodes/fwd-mgmt/internal/config"
@@ -35,6 +33,7 @@ var rootCmd = &cobra.Command{
 		parsedConfig, err := config.NewConfig()
 
 		if err != nil {
+
 			return fmt.Errorf("failed to parse config file: %s", err)
 		}
 
@@ -48,8 +47,10 @@ var rootCmd = &cobra.Command{
 		tunnels := make([]config.SSHTunnel, 0)
 
 		if len(tags) > 0 {
+			log.Debugf("tags: %v", tags)
 			tunnels = append(tunnels, parsedConfig.SSH.GetTunnelsByTags(tags)...)
 		} else {
+			log.Debugf("no tags: %v", tags)
 			tunnels = append(tunnels, parsedConfig.SSH.Tunnels...)
 		}
 
@@ -58,16 +59,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		for _, forward := range tunnels {
-
-			// Start the SSH agent and add the key
-			agent, err := ssh.NewSSHAgent(parsedConfig.SSH.Key)
-			if err != nil {
-				return fmt.Errorf("failed to start SSH agent: %s", err)
-			}
-			defer agent.Conn.Close()
-
-			agentsPids = append(agentsPids, agent.Pid)
-
 			if parsedConfig.SSH.DefaultUser == "" && forward.SSHUser == "" {
 				return fmt.Errorf("no default user set in config or tunnel for %s", forward.RemoteHost)
 			}
@@ -90,21 +81,16 @@ var rootCmd = &cobra.Command{
 				sshPort = parsedConfig.SSH.DefaultPort
 			}
 
-			go ssh.StartForwardSession(fmt.Sprintf("%s:%s", sshHost, sshPort), sshUser, forward.LocalHost, forward.LocalPort, forward.RemoteHost, forward.RemotePort, agent.Conn)
+			log.Debugf("ssh user: %s, ssh port: %s", sshUser, sshPort)
+
+			go func() {
+				err := ssh.StartForwardSession(fmt.Sprintf("%s:%s", sshHost, sshPort), sshUser, forward.LocalHost, forward.LocalPort, forward.RemoteHost, forward.RemotePort, parsedConfig.SSH.PrivayeKeyPath)
+				if err != nil {
+					log.Fatalf("failed to start ssh session: %s", err)
+				}
+			}()
 		}
 
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-		go func() {
-			<-sigs
-			for _, pid := range agentsPids {
-				err := ssh.KillSSHAgent(pid)
-				if err != nil {
-					log.Infof("failed to kill SSH agent: %s", err)
-				}
-			}
-			os.Exit(0)
-		}()
 		for {
 			time.Sleep(1 * time.Second)
 		}
@@ -114,12 +100,6 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		for _, pid := range agentsPids {
-			err := ssh.KillSSHAgent(pid)
-			if err != nil {
-				log.Errorf("Failed to kill SSH agent: %s", err)
-			}
-		}
 		os.Exit(1)
 	}
 }
