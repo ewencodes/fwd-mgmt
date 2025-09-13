@@ -12,53 +12,81 @@ import (
 
 type Forward struct{}
 
-func StartForwardSession(sshHost string, sshUser string, localHost string, localPort string, remoteHost string, remotePort string, agentConn net.Conn) {
-	config, err := getSSHConfig(sshUser, agentConn)
+func StartForwardSession(sshHost string, sshUser string, localHost string, localPort string, remoteHost string, remotePort string, privateKeyPath string) error {
+	log.Debugf("using %s key", privateKeyPath)
+	config, err := getSSHConfig(sshUser, privateKeyPath)
 	if err != nil {
-		log.Debugf("failed to get SSH config: %s", err)
-		return
+		return fmt.Errorf("failed to get SSH config: %s", err)
 	}
 
 	conn, err := ssh.Dial("tcp", sshHost, config)
 	if err != nil {
-		log.Debugf("failed to dial: %s (%s for %s:%s -> %s:%s)", err, sshHost, remoteHost, remotePort, localHost, localPort)
-		return
+		return fmt.Errorf("failed to dial: %s (%s for %s:%s)", err, sshHost, remoteHost, remotePort)
 	}
-	defer conn.Close()
+	defer func(conn *ssh.Client) {
+		err := conn.Close()
+		if err != nil {
+			log.Warnf("failed to close SSH connection: %s", err)
+		}
+	}(conn)
 
-	localListener, err := net.Listen("tcp", localHost+":"+localPort)
+	localListener, err := net.Listen("tcp", "127.0.0.1:"+localPort)
 	if err != nil {
 		log.Debugf("failed to listen on local port: %s", err)
-		fmt.Printf("Failed to listen on %s:%s -> %s\n", localHost, localPort, err)
-		return
+		return fmt.Errorf("failed to listen on %s:%s -> %s", localHost, localPort, err)
 	}
-	defer localListener.Close()
+	defer func(localListener net.Listener) {
+		err := localListener.Close()
+		if err != nil {
+			log.Warnf("failed to close local listener: %s", err)
+		}
+	}(localListener)
 
 	fmt.Printf("Listening on %s:%s and forwarding to %s:%s\n", localHost, localPort, remoteHost, remotePort)
 
 	for {
 		localConn, err := localListener.Accept()
 		if err != nil {
-			log.Printf("Failed to accept local connection: %s", err)
-			continue
+			log.Debugf("failed to accept local connection: %s", err)
+			return fmt.Errorf("failed to accept local connection: %s", err)
 		}
+		log.Debugf("new connection from %s", localConn.RemoteAddr())
 
 		remoteConn, err := conn.Dial("tcp", fmt.Sprintf("%s:%s", remoteHost, remotePort))
 		if err != nil {
-			log.Debugf("Failed to connect to remote host: %s", err)
-			continue
+			log.Debugf("failed to connect to remote host: %s", err)
+			return fmt.Errorf("failed to connect to remote host: %s", err)
 		}
+		log.Debugf("forwarding connection from %s to %s", localConn.RemoteAddr(), remoteConn.RemoteAddr())
 
 		go handleConnection(localConn, remoteConn)
 	}
 }
 
 func handleConnection(localConn net.Conn, remoteConn net.Conn) {
-	log.Debugf("Handling connection from %s to %s", localConn.RemoteAddr(), remoteConn.RemoteAddr())
+	log.Debugf("handling connection from %s to %s", localConn.RemoteAddr(), remoteConn.RemoteAddr())
 
-	defer localConn.Close()
-	defer remoteConn.Close()
+	defer func(localConn net.Conn) {
+		err := localConn.Close()
+		if err != nil {
+			log.Warnf("failed to close local connection: %s", err)
+		}
+	}(localConn)
+	defer func(remoteConn net.Conn) {
+		err := remoteConn.Close()
+		if err != nil {
+			log.Warnf("failed to close remote connection: %s", err)
+		}
+	}(remoteConn)
 
-	go io.Copy(remoteConn, localConn)
-	io.Copy(localConn, remoteConn)
+	go func() {
+		_, err := io.Copy(remoteConn, localConn)
+		if err != nil {
+			log.Warnf("failed to copy remote connection: %s", err)
+		}
+	}()
+	_, err := io.Copy(localConn, remoteConn)
+	if err != nil {
+		log.Warnf("failed to copy local connection: %s", err)
+	}
 }

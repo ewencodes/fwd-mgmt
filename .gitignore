@@ -31,3 +31,5 @@ bin/
 build/
 
 fwd-mgmt.yaml
+# Added by goreleaser init:
+dist/

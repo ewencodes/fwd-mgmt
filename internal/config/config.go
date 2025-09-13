@@ -13,11 +13,11 @@ type Config struct {
 }
 
 type SSH struct {
-	Tunnels     []SSHTunnel `mapstructure:"tunnels"`
-	Key         string      `mapstructure:"private_key"`
-	DefaultUser string      `mapstructure:"default_ssh_user"`
-	DefaultPort string      `mapstructure:"default_ssh_port"`
-	DefaultHost string      `mapstructure:"default_ssh_host"`
+	Tunnels        []SSHTunnel `mapstructure:"tunnels"`
+	PrivayeKeyPath string      `mapstructure:"private_key"`
+	DefaultUser    string      `mapstructure:"default_ssh_user"`
+	DefaultPort    string      `mapstructure:"default_ssh_port"`
+	DefaultHost    string      `mapstructure:"default_ssh_host"`
 }
 
 type SSHTunnel struct {
